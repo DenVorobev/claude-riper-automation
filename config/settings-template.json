@@ -1,0 +1,49 @@
+{
+  "hooks": {
+    "PreToolUse": [],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/validate-riper-workflow"
+          }
+        ]
+      }
+    ],
+    "Stop": [],
+    "SubagentStop": [],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/smart-riper-hint"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/bin/auto-memory-save"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/auto-trigger-innovate"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/auto-review-reminder"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/bin/sync-riper-to-todos"
+          }
+        ]
+      }
+    ]
+  }
+}
