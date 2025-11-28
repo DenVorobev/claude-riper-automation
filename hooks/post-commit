@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# RIPER Workflow Post-commit Hook
+# Logs successful commits to Memory Bank with workflow metadata
+# Records which RIPER phases were completed for this commit
+
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+commit_hash=$(git rev-parse HEAD)
+commit_message=$(git log -1 --pretty=%B)
+commit_author=$(git log -1 --pretty=%an)
+memory_bank="$repo_root/.claude/memory-bank"
+
+echo -e "${BLUE}📝 RIPER Workflow Post-commit (Logging)${NC}"
+
+# Only log if memory bank is initialized
+if [ ! -d "$memory_bank" ]; then
+  exit 0
+fi
+
+# Create sessions directory if it doesn't exist
+sessions_dir="$memory_bank/$branch/sessions"
+mkdir -p "$sessions_dir"
+
+# Create commit log entry
+timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+session_file="$sessions_dir/commit-$(date +%s).md"
+
+# Check which RIPER phases exist for this commit
+phases_found=""
+if [ -d "$memory_bank/$branch/plans" ]; then
+  plans_count=$(ls -1 "$memory_bank/$branch/plans"/*.md 2>/dev/null | wc -l)
+  if [ "$plans_count" -gt 0 ]; then
+    phases_found="${phases_found}PLAN "
+  fi
+fi
+
+if [ -d "$memory_bank/$branch/reviews" ]; then
+  reviews_count=$(ls -1 "$memory_bank/$branch/reviews"/*.md 2>/dev/null | wc -l)
+  if [ "$reviews_count" -gt 0 ]; then
+    phases_found="${phases_found}REVIEW "
+  fi
+fi
+
+# Write commit log
+cat > "$session_file" << EOF
+# Commit Log
+
+**Time:** $timestamp
+**Commit:** $commit_hash
+**Author:** $commit_author
+**Branch:** $branch
+
+## Commit Message
+\`\`\`
+$commit_message
+\`\`\`
+
+## RIPER Phases Completed
+- Phases: $phases_found
+
+## Files Changed
+$(git diff-tree --no-commit-id --name-status -r $commit_hash | sed 's/^/- /')
+
+---
+*Logged by RIPER post-commit hook*
+EOF
+
+echo -e "${GREEN}✓ Commit logged to Memory Bank${NC}"
+exit 0
