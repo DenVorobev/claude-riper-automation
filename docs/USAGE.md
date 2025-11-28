@@ -391,6 +391,79 @@ Output:
 ═══════════════════════════════════════════════════════════════════════════
 ```
 
+## Integration with Task Master MCP
+
+**Important:** sync-riper-to-todos and Task Master (MCP) are complementary tools, NOT conflicting.
+
+### How They Work Together
+
+**sync-riper-to-todos:**
+- Automatically parses RIPER plans
+- Displays steps as simple checklist: `[ ] Step 1`
+- Read-only (doesn't store data)
+- Triggered automatically when you say "реализуй"
+
+**Task Master (MCP):**
+- Full task management system
+- Stores tasks in `.taskmaster/` structure
+- Explicit CLI commands (`tm add`, `tm done`, etc)
+- Useful for complex projects with dependencies
+
+### When to Use Each
+
+**Use sync-riper-to-todos when:**
+```
+You have a RIPER plan with clear numbered steps:
+  1. Create webhook handler
+  2. Add retry logic
+  3. Write tests
+  → Say "реализуй" → system shows checklist automatically
+```
+
+**Use Task Master when:**
+```
+You need:
+  - Complex task dependencies
+  - Long-running project tracking
+  - Sub-tasks and milestones
+  - Detailed metadata
+  → Use: tm add "Task name" (explicit)
+```
+
+### Recommended Workflow
+
+```
+RIPER Plan (simple features)
+  ↓
+  Say: "реализуй"
+  ↓
+  sync-riper-to-todos shows: [ ] Step 1, [ ] Step 2...
+  ↓
+  Follow checklist
+  ↓
+  Done!
+
+────────────────────────────────────
+
+Complex Project (many dependencies)
+  ↓
+  Create RIPER plan
+  ↓
+  OPTIONALLY: tm add "Create webhook handler" --depends-on X
+  ↓
+  Use both: checklist + Task Master for tracking
+  ↓
+  Done!
+```
+
+### No Conflicts!
+
+These work together:
+- sync-riper-to-todos: **shows** steps from plan
+- Task Master: **tracks** and **organizes** tasks
+- Both can be used in same project
+- They don't interfere with each other
+
 ## Best Practices
 
 ### ✅ DO:

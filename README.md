@@ -27,6 +27,9 @@ This system automatically enhances your Claude Code development workflow by:
 - **auto-trigger-innovate**: After RESEARCH completes → suggests/triggers INNOVATE
 - **auto-review-reminder**: After EXECUTE completes → suggests/triggers REVIEW
 - **sync-riper-to-todos**: Parses RIPER plans and creates TodoLists
+  - *Note: Works alongside Task Master MCP (no conflicts)*
+  - Automatically triggers when you say "реализуй" or "implement"
+  - Displays steps as checklist for quick reference
 
 ### 4. Quality Gates (#5)
 - **pre-commit hooks**: Validates RIPER workflow compliance before commits
