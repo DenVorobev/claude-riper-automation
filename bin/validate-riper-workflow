@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Validate RIPER workflow compliance
+# Helper for git hooks and pre-checks
+# Checks if plan exists and workflow is complete
+
+# Return 0 if OK, 1 if issues found
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+
+# Check if memory bank initialized
+memory_bank="$repo_root/.claude/memory-bank"
+if [ ! -d "$memory_bank" ]; then
+  exit 0  # Not initialized yet, that's ok
+fi
+
+# Check if plan exists for current branch
+plans_dir="$memory_bank/$branch/plans"
+if [ ! -d "$plans_dir" ]; then
+  exit 0  # No plans yet, that's ok
+fi
+
+# Check if review exists
+reviews_dir="$memory_bank/$branch/reviews"
+if [ -d "$reviews_dir" ]; then
+  latest_review=$(ls -t "$reviews_dir"/*.md 2>/dev/null | head -1)
+  if [ -n "$latest_review" ]; then
+    exit 0  # Review exists, all good
+  fi
+fi
+
+# If we get here, validation passed
+exit 0

@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Sync RIPER plan with TodoList
+# Improvement #3: Convert plan steps to actionable todos
+# Trigger: UserPromptSubmit (when user says "реализуй" or "implement")
+
+# Color codes
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+input="${1:-$(cat)}"
+
+# Check if this is an "implement" command
+if ! echo "$input" | grep -iE "(реализуй|implement|execute|начни|start)" > /dev/null; then
+  exit 0
+fi
+
+# Find the latest RIPER plan
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+plans_dir="$repo_root/.claude/memory-bank/$branch/plans"
+
+# Check if plans directory exists
+if [ ! -d "$plans_dir" ]; then
+  echo -e "${YELLOW}ℹ️  No RIPER plans found yet${NC}"
+  echo "   Run /riper:plan first to create implementation plan"
+  exit 0
+fi
+
+# Find latest plan file
+latest_plan=$(ls -t "$plans_dir"/*.md 2>/dev/null | head -1)
+
+if [ -z "$latest_plan" ]; then
+  echo -e "${YELLOW}ℹ️  No RIPER plans found${NC}"
+  exit 0
+fi
+
+# Extract steps from plan
+steps=$(grep "^[0-9]\+\." "$latest_plan" | sed 's/^[0-9]\+\.\s*//' || echo "")
+
+if [ -z "$steps" ]; then
+  echo -e "${YELLOW}ℹ️  No implementation steps found in plan${NC}"
+  exit 0
+fi
+
+# Show plan being used
+echo -e "${GREEN}📝 Plan loaded: $(basename "$latest_plan")${NC}"
+echo -e "${BLUE}Implementation steps:${NC}"
+echo ""
+
+# Display and count steps
+count=0
+echo "$steps" | while IFS= read -r step; do
+  [ -z "$(echo "$step" | tr -d '[:space:]')" ] && continue
+  count=$((count + 1))
+  echo "  [ ] $step"
+done
+
+total_steps=$(echo "$steps" | grep -c ".")
+echo ""
+echo -e "${YELLOW}📊 Total: $total_steps steps${NC}"
+echo -e "${BLUE}Progress will be tracked during implementation${NC}"
+echo ""
+
+exit 0

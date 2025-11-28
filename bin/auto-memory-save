@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Auto-save architectural decisions to Memory Bank
+# Improvement #1: Automatic saving of important decisions
+# Trigger: PostToolUse hook (after Write/Edit operations)
+
+set -e
+
+# Color codes
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Get input from stdin or argument
+input="${1:-$(cat)}"
+
+# Return early for simple acknowledgments
+if echo "$input" | grep -iE "^(ok|готово|понял|yes|да|нет|no|thanks|спасибо|thanks|thanks you)$" > /dev/null; then
+  exit 0
+fi
+
+# Skip if input is empty
+if [ -z "$input" ]; then
+  exit 0
+fi
+
+# Keywords for CRITICAL importance (architecture, security, payments)
+critical_keywords="архитектур|дизайн|используем|выбираем|безопасн|auth|security|payment|stripe|postgresql|database|монорепо|monorepo|микросервис|microservice|oauth|jwt|encryption|шифр"
+
+# Keywords for HIGH importance (integrations, bugs, business logic)
+high_keywords="интегрируем|api|webhook|исправили|баг|bug|серьёзный|serious|алгоритм|algorithm|performance|оптимиз"
+
+# Keywords for MEDIUM importance (features, refactoring)
+medium_keywords="feature|фича|команда|command|function|функция|модуль|module|refactor|рефакторинг|тест|test"
+
+# Determine importance level
+importance="none"
+
+if echo "$input" | grep -iE "$critical_keywords" > /dev/null; then
+  importance="critical"
+elif echo "$input" | grep -iE "$high_keywords" > /dev/null; then
+  importance="high"
+elif echo "$input" | grep -iE "$medium_keywords" > /dev/null; then
+  # Only save medium if it's substantial (>50 chars)
+  if [ ${#input} -gt 50 ]; then
+    importance="medium"
+  fi
+fi
+
+# If not important enough, don't save
+if [ "$importance" = "none" ]; then
+  exit 0
+fi
+
+# Show indication that we're saving
+case "$importance" in
+  "critical")
+    echo -e "${GREEN}💾 Auto-saving CRITICAL decision to Memory Bank${NC}"
+    echo -e "${BLUE}Decision detected:${NC} $(echo "$input" | head -c 60)..."
+    ;;
+  "high")
+    echo -e "${YELLOW}💾 Auto-saving HIGH importance to Memory Bank${NC}"
+    ;;
+  "medium")
+    echo -e "${YELLOW}💾 Auto-saving MEDIUM importance to Memory Bank${NC}"
+    ;;
+esac
+
+# Create timestamp
+timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+date_str=$(date -u +"%Y%m%d")
+
+# Get current git branch
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+
+# Create directory structure if needed
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+memory_dir="$repo_root/.claude/memory-bank/$branch/sessions"
+mkdir -p "$memory_dir" 2>/dev/null || true
+
+# Create session file with decision
+session_file="$memory_dir/$date_str-auto-save.md"
+
+# If file exists, append to it
+if [ -f "$session_file" ]; then
+  cat >> "$session_file" << EOF
+
+## Auto-saved Decision ($(date '+%H:%M:%S'))
+
+**Importance:** $importance
+
+**Decision:**
+$input
+
+**Context:** Auto-detected from user action
+**Timestamp:** $timestamp
+EOF
+else
+  cat > "$session_file" << EOF
+# Auto-saved Decisions - $date_str
+
+## Auto-saved Decision ($(date '+%H:%M:%S'))
+
+**Importance:** $importance
+
+**Decision:**
+$input
+
+**Context:** Auto-detected from user action
+**Timestamp:** $timestamp
+EOF
+fi
+
+# Log success (brief)
+echo -e "${GREEN}✅ Saved to Memory Bank${NC}"
+
+exit 0

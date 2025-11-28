@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Auto-review reminder after EXECUTE completes
+# Improvement #4: Remind user to run REVIEW after EXECUTE
+# Trigger: UserPromptSubmit hook
+
+# Color codes
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+input="${1:-$(cat)}"
+
+# Skip empty input
+[ -z "$input" ] && exit 0
+
+# Skip acknowledgments
+if echo "$input" | grep -iE "^(ok|ready|готово|yes|да|спасибо)$" > /dev/null; then
+  exit 0
+fi
+
+# Check if user just completed EXECUTE phase
+# Look for indicators that EXECUTE just finished
+if echo "$input" | grep -iE "(complete|done|готово|finished|ready|review)" > /dev/null; then
+
+  # Check if EXECUTE was the last phase
+  # by looking for recent code changes or test results in context
+
+  echo -e "${RED}⚠️  EXECUTE Phase Complete!${NC}"
+  echo ""
+  echo -e "${YELLOW}Important Quality Gate:${NC}"
+  echo "  Before committing code, REVIEW phase ensures:"
+  echo "  ✓ All plan steps implemented correctly"
+  echo "  ✓ Tests passing without issues"
+  echo "  ✓ No extra/unplanned changes"
+  echo "  ✓ Code quality standards met"
+  echo ""
+  echo -e "${BLUE}Ready for code review?${NC}"
+  echo -e "  ${GREEN}/riper:review${NC} - Validate implementation"
+  echo ""
+  echo "Then:"
+  echo -e "  ${GREEN}git commit${NC} - Commit with validated quality"
+  echo ""
+fi
+
+# Check if user explicitly asked for review
+if echo "$input" | grep -iE "/riper:review" > /dev/null; then
+  echo -e "${GREEN}✅ Starting REVIEW phase...${NC}"
+fi
+
+exit 0

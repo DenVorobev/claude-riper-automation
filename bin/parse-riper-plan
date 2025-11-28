@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Helper script: Parse RIPER plan and extract implementation steps
+# Used by: sync-riper-to-todos
+# Input: path to plan file or stdin
+# Output: JSON array of steps
+
+plan_file="${1:--}"
+
+# Read plan content
+if [ "$plan_file" = "-" ]; then
+  plan_content=$(cat)
+else
+  [ -f "$plan_file" ] || {
+    echo '{"error": "Plan file not found", "steps": []}' >&2
+    exit 1
+  }
+  plan_content=$(cat "$plan_file")
+fi
+
+# Extract Implementation Steps section
+steps_section=$(echo "$plan_content" | \
+  awk '/^## Implementation Steps/,/^## [A-Z]/ {print}' | \
+  grep -v "^## Implementation Steps" | \
+  grep -v "^## " | \
+  sed 's/^[0-9]\+\.\s*//g')
+
+# Convert to JSON array
+echo "{"
+echo '  "steps": ['
+
+echo "$steps_section" | while IFS= read -r line; do
+  # Skip empty lines
+  [ -z "$(echo "$line" | tr -d '[:space:]')" ] && continue
+
+  # Output as JSON string
+  # Escape quotes and newlines
+  escaped_line=$(echo "$line" | sed 's/"/\\"/g')
+  echo "    \"$escaped_line\","
+done | sed '$ s/,$//'
+
+echo "  ],"
+echo "  \"count\": $(echo "$steps_section" | grep -c .)"
+echo "}"
+
+exit 0

@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Auto-trigger INNOVATE phase after RESEARCH completes
+# Improvement #2: Automatic workflow progression
+# Trigger: UserPromptSubmit hook (after user message)
+
+# Color codes
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Try to detect if RESEARCH phase just completed
+# This is done by checking:
+# 1. If last RIPER command was /riper:research
+# 2. If we're waiting for next phase
+
+# We need to maintain state somewhere - let's use a temp file
+state_file="/tmp/riper_last_phase_$$"
+
+# Check if we have previous state
+if [ -f "$state_file" ]; then
+  last_phase=$(cat "$state_file" 2>/dev/null || echo "")
+  rm -f "$state_file"
+else
+  last_phase=""
+fi
+
+# Get current input
+input="${1:-$(cat)}"
+
+# Check if input contains RIPER phase triggers
+if echo "$input" | grep -iE "/riper:research" > /dev/null; then
+  echo "$BLUE" > "$state_file"
+  echo "research" > "$state_file"
+  exit 0
+fi
+
+# If last phase was research, and user sends a new message
+if [ "$last_phase" = "research" ] && [ -n "$input" ]; then
+
+  # Skip if user is just acknowledging or asking about research
+  if echo "$input" | grep -iE "^(ok|готово|yes|да|next|дальше|спасибо)$" > /dev/null; then
+    # User is ready to continue
+
+    echo -e "${GREEN}📝 Research complete!${NC}"
+    echo -e "${BLUE}Findings summary:${NC}"
+    echo "  - Current state analyzed"
+    echo "  - Context documented"
+    echo "  - Ready to explore solutions"
+    echo ""
+    echo -e "${YELLOW}Ready to innovate?${NC}"
+    echo -e "  ${BLUE}/riper:innovate${NC} - Explore solution approaches"
+    echo ""
+
+    # Save state for next phase
+    echo "innovate_suggested" > "$state_file"
+  fi
+fi
+
+# Also check if user wants to skip to innovate directly
+if echo "$input" | grep -iE "/riper:innovate" > /dev/null; then
+  echo "innovate_triggered" > "$state_file"
+fi
+
+exit 0
